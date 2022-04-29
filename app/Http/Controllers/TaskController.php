@@ -17,17 +17,24 @@ class TaskController extends Controller
    * 
    * @return \Illuminate\View\View
    */
+  /**
+   * 一覧用のIlluminate\Database\Eloquent\Builder インスタンスの取得
+   */
+  protected function getListBuilder()
+  {
+    return TaskModel::where('user_id', Auth::id())
+              ->orderBy('priority', 'DESC')
+              ->orderBy('period')
+              ->orderBy('created_at');
+  }
   public function list()
   {
     // 1page辺りの表示アイテム数を設定
-    $per_page = 15;
+    $per_page = 20;
 
     // 一覧の取得
-    $list = TaskModel::where('user_id', Auth::id())
-                        ->orderBy('priority', 'DESC')
-                        ->orderBy('period')
-                        ->orderBy('created_at')
-                        ->paginate($per_page);
+    $list = $this->getListBuilder()
+                ->paginate($per_page);
     return view('task.list', ['list' => $list]);
   }
   /**
@@ -179,5 +186,54 @@ class TaskController extends Controller
 
     // 一覧に移動する
     return redirect('/task/list');
+  }
+  /**
+   * CSVダウンロード
+   */
+  public function csvDownload()
+  {
+    $data_list = [
+      'id' => 'タスクID',
+      'name' => 'タスク名',
+      'priority' => '重要度',
+      'period' => '期限',
+      'detail' => 'タスク詳細',
+      'created_at' => 'タスク作成日',
+      'updated_at' => 'タスク作成日',
+    ];
+    // 「ダウンロードさせたいCSV」を作成する
+    // データを取得する
+    $list = $this->getListBuilder()->get();
+
+    // バッファリングを開始
+    ob_start();
+
+    // 書き込み先を"出力"にしたファイルハンドルを作成する
+    $file = new \SplFileObject('php://output', 'w');
+    // ヘッダを書き込む
+    $file->fputcsv(array_values($data_list));
+    // CSVをファイルに書き込む
+    foreach($list as $datum) {
+      $awk = []; // 作業領域の確保
+      // $data_listに書いてある順番に、書いてある要素だけを $awkに格納する
+      foreach($data_list as $k => $v) {
+        if ($k === 'priority') {
+          $awk[] = $datum->getPriorityString();
+        } else {
+          $awk[] = $datum->$k;
+        }
+      }
+      $file->fputcsv($awk);
+    }
+    // 現在のバッファの中身を取得し出力バッファを削除する
+    $csv_string = ob_get_clean();
+    // 文字コードを変換する
+    $csv_string_sjis = mb_convert_encoding($csv_string, 'SJIS', 'UTF-8');
+    // ダウンロードファイル名の作成
+    $download_filename = 'task_list.'.date('Ymd').'.csv';
+    // CSVを出力する
+    return response($csv_string_sjis)
+      ->header('Content-Type', 'text/csv')
+      ->header('Content-Disposition', 'attachment; filename="' . $download_filename . '"');
   }
 }
