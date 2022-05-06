@@ -9,6 +9,7 @@ use App\Http\Controllers\CompletedTaskController;
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
 use App\Http\Controllers\Admin\HomeController as AdminHomeController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\UserController;
 
 /*
 |--------------------------------------------------------------------------
@@ -59,3 +60,7 @@ Route::prefix('/admin')->group(function () {
   });
   Route::get('/logout', [AdminAuthController::class, 'logout']);
 });
+
+// 新規会員登録
+Route::get('/user/register',[UserController::class,'index']);
+Route::post('/user/register',[UserController::class,'register']);
