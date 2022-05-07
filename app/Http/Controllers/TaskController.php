@@ -199,7 +199,7 @@ class TaskController extends Controller
       'period' => '期限',
       'detail' => 'タスク詳細',
       'created_at' => 'タスク作成日',
-      'updated_at' => 'タスク作成日',
+      'updated_at' => 'タスク修正日',
     ];
     // 「ダウンロードさせたいCSV」を作成する
     // データを取得する
